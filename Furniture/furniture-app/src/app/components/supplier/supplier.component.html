@@ -1,0 +1,82 @@
+<div class="container mt-4">
+    <h2>Home / Supplier</h2>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <input type="text" class="form-control search-bar mb-3" placeholder="Search by Supplier ID,Name,Address" [(ngModel)]="searchTerm">
+        <div class="header">
+            <button class="btn btn-primary mb-3" (click)="openModal()">Add Supplier</button>        </div>
+    </div>
+
+    <!-- Supplier Table -->
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Supplier Id</th>
+                <th>Supplier Code</th>
+                <th>Supplier Name</th>
+                <th>Supplier Address</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let supplier of paginatedProducts">
+                <td>{{ supplier.supplierID }}</td>
+                <td>{{ supplier.supplierCode }}</td>
+                <td>{{ supplier.supplierName }}</td>
+                <td>{{ supplier.supplierAddress }}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" (click)="editSupplier(supplier)">Edit</button>
+                    <button class="btn btn-sm btn-danger" (click)="deleteSupplier(supplier.supplierID)">Delete</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination Controls -->
+    <nav *ngIf="totalPages > 1">
+        <ul class="pagination">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+                <button class="page-link" (click)="prevPage()">Previous</button>
+            </li>
+            <li class="page-item" *ngFor="let page of totalPagesArray" [class.active]="currentPage === page">
+                <button class="page-link" (click)="goToPage(page)">{{ page }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <button class="page-link" (click)="nextPage()">Next</button>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Add or Edit Supplier Modal -->
+<div id="addSupplierModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ newSupplier.supplierID > 0 ? 'Edit Supplier' : 'Add Supplier' }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier Code</label>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.supplierCode" name="supplierCode" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier Name</label>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.supplierName" name="supplierName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier Address</label>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.supplierAddress" name="supplierAddress" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="closeSupplier()">Close</button>
+                <button type="button" class="btn btn-primary" (click)="saveSupplier()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
