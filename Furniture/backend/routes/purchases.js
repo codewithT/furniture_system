@@ -3,6 +3,9 @@ const router = express.Router();
 const db = require('../config/db');
 const requireAuth = require('./authMiddleware');
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+const moment = require("moment");
+
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -11,7 +14,6 @@ const transporter = nodemailer.createTransport({
     },
   });
 
-// API to fetch required fields from purchasemaster table
 router.get('/purchase', (req, res) => {
     const query = `SELECT PurchaseID, SONumber, Delivery_date, POStatus, PONumber, ProductCode, SupplierCode , Ordered_Qty FROM purchasemaster`;
     
@@ -24,10 +26,8 @@ router.get('/purchase', (req, res) => {
         }
     });
 });
-const crypto = require("crypto");
-const moment = require("moment");
 
-router.post("/purchase/send-mails", async (req, res) => {
+router.post("/purchase/send-mails", requireAuth, async (req, res) => {
     const selectedPurchases = req.body;
 
     if (!selectedPurchases || selectedPurchases.length === 0) {
@@ -139,7 +139,117 @@ router.post("/purchase/send-mails", async (req, res) => {
         });
     }
 });
+ 
+router.put("/purchase/:id", requireAuth, async(req, res)=>{
+    const {id} = req.params;
 
+    const {ProductCode, SupplierCode, SONumber, Delivery_date, POStatus, PONumber,
+        Changed_by
+    } = req.body;
+    console.log(req.body);
+  try {
+    await new Promise((resolve, reject) => {
+        db.beginTransaction((err) => {
+            if (err) return reject(err);
+            resolve();
+        });
+    });
+
+    const query = `UPDATE furniture_db.purchasemaster 
+        SET SupplierCode = ?, ProductCode = ?, SONumber = ?, Changed_by = ?, 
+        Changed_date = CURDATE(), Changed_time = CURTIME(), PONUmber = ?, POStatus = ?, Delivery_date =?
+        WHERE PurchaseID = ?`;
+
+    const result = await new Promise((resolve, reject) => {
+        db.query(query, [SupplierCode, ProductCode, SONumber, Changed_by, PONumber, POStatus,Delivery_date,  id], (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+        });
+    });
+
+    if (result.affectedRows === 0) {
+        throw new Error("purchase not found");
+    }
+
+    await new Promise((resolve, reject) => {
+        db.commit((err) => {
+            if (err) return reject(err);
+            resolve();
+        });
+    });
+
+    res.json({ msg: "Purchases updated successfully" });
+} catch (error) {
+    console.error("Error updating Purchase:", error);
+    db.rollback(() => {
+        res.status(error.message === "Purchase record not found" ? 404 : 500).json({ error: error.message || "Unable to update purchase" });
+    });
+}
+    
+});
+
+// Search purchases by query string
+router.get("/purchase/search", requireAuth, (req, res) => {
+    const {query }= req.query; // Extract query string from request
+    
+    const sql = `
+      SELECT * FROM purchasemaster
+      WHERE 
+        SONumber LIKE ? OR 
+        PurchaseID LIKE ? OR
+        ProductCode LIKE ? OR
+        SupplierCode LIKE ? OR
+        Delivery_date LIKE ?
+    `;
+  
+    const searchTerm = `%${query}%`;
+  
+    // Execute query
+    db.query(sql, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm], (err, results) => {
+      if (err) {
+        console.error("Error executing search query:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+      }
+      res.json(results);
+    });
+  });
 
   
+router.delete("/purchase/:id", requireAuth, async (req, res)=>{
+    const {id} = req.params;
+   
+    try{
+        await new Promise((resolve, reject) => {
+            db.beginTransaction((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+        const sqlQuery = `DELETE from furniture_db.purchasemaster where PurchaseID = ?`;
+        const result = await new Promise((resolve, reject) => {
+            db.query(sqlQuery, [id], (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+  
+        if (result.affectedRows === 0) {
+            throw new Error("purchase not found");
+        }
+  
+        await new Promise((resolve, reject) => {
+            db.commit((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+  
+        res.json({ msg: "Purchase deleted successfully" });
+    }catch(error){
+        console.error("Error deleting purchase:", error);
+        db.rollback(() => {
+            res.status(error.message === "Purchase not found" ? 404 : 500).json({ error: error.message || "Unable to delete purchase" });
+        });
+    }
+});
 module.exports = router;

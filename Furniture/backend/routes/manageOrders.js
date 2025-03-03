@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const nodemailer = require("nodemailer");
+const requireAuth = require('./authMiddleware');
 
-router.get('/manageOrders', (req, res) => {
+router.get('/manageOrders',requireAuth,  (req, res) => {
     const query = 
     `SELECT st.SalesID, st.SONumber, st.ProductID, pm.ProductName, st.SupplierID, st.Qty, st.Price, st.GST, 
     st.TotalPrice, st.ShipToParty, st.CustomerEmail, st.Delivery_date, st.Payment_Status, st.Created_date 
@@ -30,7 +31,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-router.post('/manageOrders/send-mails', async (req, res) => {
+router.post('/manageOrders/send-mails',requireAuth,  async (req, res) => {
     const selectedOrders = req.body.orders;
     console.log(selectedOrders);
 

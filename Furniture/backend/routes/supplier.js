@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const requireAuth = require('./authMiddleware');
-// Middleware to check authentication
  
 
-// **Fetch all suppliers**
+// Fetch all suppliers
 router.get('/supplier', requireAuth, (req, res) => {
   const query = "SELECT SupplierID, SupplierCode, SupplierName, SupplierAddress, EmailAddress FROM furniture_db.supplier";
   db.query(query, (err, results) => {
@@ -16,7 +15,7 @@ router.get('/supplier', requireAuth, (req, res) => {
     return res.json(results);
   });
 });
-// **Add a new supplier**
+// Add a new supplier
 router.post('/supplier', requireAuth, async (req, res) => {
   const { SupplierCode, SupplierName, SupplierAddress, EmailAddress, Created_by } = req.body;
 
@@ -55,7 +54,7 @@ router.post('/supplier', requireAuth, async (req, res) => {
   }
 });
 
-// **Update an existing supplier**
+//Update an existing supplier
 router.put('/supplier/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const { SupplierCode, SupplierName, SupplierAddress, EmailAddress, Changed_by } = req.body;
@@ -100,7 +99,7 @@ router.put('/supplier/:id', requireAuth, async (req, res) => {
   }
 });
 
-// **Delete a supplier**
+//Delete a supplier
 router.delete('/supplier/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
 
@@ -144,6 +143,7 @@ router.delete('/supplier/:id', requireAuth, async (req, res) => {
 router.get('/supplier/search', (req, res) => {
   const { query } = req.query;
 
+  
   let sql = `SELECT * FROM supplier e 
              WHERE e.SupplierCode LIKE ? 
              OR e.SupplierName LIKE ? 

@@ -33,6 +33,7 @@ export class PurchaseComponent implements OnInit {
   }
   loadPurchases() {
     this.purchaseService.getPurchases().subscribe((purchases: Purchase[]) => {
+      console.log(purchases);
       this.purchases = purchases.map(purchase => ({ ...purchase, selected: false }));
       this.refreshList();
     });
@@ -40,13 +41,16 @@ export class PurchaseComponent implements OnInit {
   
   
   refreshList() {
-    this.filteredPurchases = [...this.purchases];
+    this.purchaseService.getPurchases().subscribe((purchases : Purchase[]) =>{
+        this.purchases = purchases.map(purchase =>({...purchase, selected : false}));
+    })
     this.applySorting();
     this.updateTotalPages();
   }
 
   updateTotalPages() {
-    this.totalPages = Math.ceil(this.filteredPurchases.length / this.pageSize);
+    console.log("filtered purchases " , this.filteredPurchases);
+    this.totalPages = Math.ceil(this.purchases.length / this.pageSize);
     this.currentPage = Math.min(this.currentPage, this.totalPages) || 1;
   }
   getSelectedPurchases() {
@@ -88,7 +92,7 @@ export class PurchaseComponent implements OnInit {
 
   get paginatedPurchases(): Purchase[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredPurchases.slice(start, start + this.pageSize);
+    return this.purchases.slice(start, start + this.pageSize);
   }
 
   sortTable(column: keyof Purchase) {
@@ -119,22 +123,22 @@ export class PurchaseComponent implements OnInit {
              valueA > valueB ? (this.sortDirection === 'asc' ? 1 : -1) : 0;
     });
   }
-
   searchPurchases() {
-    const query = this.searchQuery.toLowerCase().trim();
-    
-    this.filteredPurchases = query
-      ? this.purchases.filter(p =>
-          p.SONumber.toLowerCase().includes(query) ||
-          p.PurchaseID.toString().includes(query) ||
-          p.Delivery_date.toLowerCase().includes(query) ||
-          p.ProductCode.toString().includes(query) ||
-          p.SupplierCode.toString().includes(query)
-        )
-      : [...this.purchases];
-
-    this.currentPage = 1;
-    this.updateTotalPages();
+    if (!this.searchQuery.trim()) {
+      this.loadPurchases(); // Load all purchases if search query is empty
+      return;
+    }
+    console.log(this.searchQuery);
+    this.purchaseService.searchPurchases(this.searchQuery).subscribe(
+      (data : Purchase[]) => {
+        this.purchases = data;
+        this.currentPage = 1;
+        this.updateTotalPages();
+      },
+      (error) => {
+        console.error('Search error:', error);
+      }
+    );
   }
 
   addPurchase() {
@@ -157,18 +161,27 @@ export class PurchaseComponent implements OnInit {
 
   editPurchase(purchase: Purchase) {
     this.isEditing = true;
+    
     this.selectedPurchase = { ...purchase };
     this.showModal = true;
   }
 
   savePurchase() {
     if (!this.selectedPurchase) return;
-
+    if(!this.selectedPurchase.PurchaseID || !this.selectedPurchase.POStatus || 
+      !this.selectedPurchase.ProductCode
+    ){
+      return;
+    }
     if (this.isEditing) {
-      const index = this.purchases.findIndex(p => p.PurchaseID === this.selectedPurchase!.PurchaseID);
-      if (index !== -1) {
-        this.purchases[index] = { ...this.selectedPurchase };
-      }
+      this.purchaseService.editPurchase(this.selectedPurchase).subscribe({
+        next: () => {
+           
+          this.refreshList();
+          this.closeModal();
+        },
+        error: (err) => console.error('Failed to update purchase:', err)
+      });
     } else {
       this.selectedPurchase.PurchaseID = Math.max(0, ...this.purchases.map(p => p.PurchaseID)) + 1;
       this.purchases.push({ ...this.selectedPurchase });
@@ -180,8 +193,16 @@ export class PurchaseComponent implements OnInit {
 
   deletePurchase(id: number) {
     if (confirm('Are you sure you want to delete this purchase?')) {
-      this.purchases = this.purchases.filter(p => p.PurchaseID !== id);
-      this.refreshList();
+      this.purchaseService.deletePurchase(id).subscribe(
+        {
+          next: ()=>{
+            console.log("purchase delete sucessfully");
+            this.refreshList();
+          }
+          ,
+        error: (err) => console.error('Failed to delete purchase:', err)
+        }
+      )
     }
   }
 
@@ -197,7 +218,7 @@ export class PurchaseComponent implements OnInit {
   // Adding the missing methods
   selectAll(event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
-    this.filteredPurchases.forEach(purchase => {
+    this.purchases.forEach(purchase => {
       purchase.selected = isChecked;
     });
   }
