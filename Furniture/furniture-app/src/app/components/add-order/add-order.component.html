@@ -7,11 +7,9 @@
             <div class="order-details">
 
                 <div class="form-group">
-                    <label>Client Email</label>
+                    <label> Email Address</label>
                     <input type="text" formControlName="clientEmail" placeholder="Enter Client Email" required />
                 </div>
-
-                 
             </div>
 
             <!-- Product Section -->
@@ -19,7 +17,9 @@
             <table class="product-table">
                 <thead>
                     <tr>
-                        <th>Product ID</th>
+                        <th>In Stock ✔</th>
+                        <th>Supplier Code</th>
+                        <th>CFE Product Code</th>
                         <th>Product Name</th>
                         <th>Price</th>
                         <th>Quantity</th>
@@ -30,8 +30,25 @@
                 <tbody formArrayName="items">
                     <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i">
                         <td>
-                            <input type="number" formControlName="ProductId" placeholder="Product ID"   
-                            (change)="onProductSearch(items.at(i).get('ProductId')?.value, i)" required />
+                            <input type="checkbox" formControlName="selected" (change)="onCheckboxChange(i, $event)"
+                            [checked]="storeProductSupplierIdCodes[i]?.Check" />
+                        </td>
+                        <td>
+                            <select formControlName="SupplierCode" (change)="handleSupplierSelect($event, i)">
+                              <option value="">-- Select Supplier --</option>
+                              <option *ngFor="let supplier of SupplierCodes[i]" [value]="supplier.SupplierCode">
+                               {{supplier.SupplierID}}  {{ supplier.SupplierCode }}
+                              </option>
+                            </select>
+                            <p *ngIf="items.at(i).get('SupplierCode')?.value">
+                              Selected: {{ items.at(i).get('SupplierCode')?.value }}
+                            </p>
+                            
+                          </td>
+                        
+                        <td>
+                            <input type="text" formControlName="ProductCode" placeholder="Product Code"   
+                            required />
                         </td>
                     <td><input type="text" formControlName="ProductName" placeholder="Product Name" required /></td>
 
@@ -71,15 +88,30 @@
                 </div>
 
                 <div class="summary-column">
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label>Paid Amount</label>
                         <input type="number" formControlName="paidAmount" placeholder="Enter Paid Amount" />
-                    </div>
-                    <div class="form-group">
+                    </div> -->
+                    <!-- <div class="form-group">
                         <label>Due Amount</label>
                         <input type="text" formControlName="dueAmount" [disabled]="true" />
+                    </div> -->
+                    <div class="form-group">
+                        <label>Payment Status</label>
+                        <select formControlName="paymentStatus">
+                            <option value="">~~SELECT~~</option>
+                            <option value="pending">Pending</option>
+                            <option value="success">Success</option>
+                        </select>
                     </div>
-                    
+                    <div class="form-group">
+                        <label>Ship To Party</label>
+                        <input type="text" formControlName="shipToParty"   />
+                    </div> 
+                    <div class="form-group">
+                        <label>Internal Node </label>
+                        <input type="text" formControlName="internalNote"   />
+                    </div>
                 </div>
             </div>
 

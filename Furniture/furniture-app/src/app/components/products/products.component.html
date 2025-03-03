@@ -4,7 +4,8 @@
  
   <!-- Search Bar -->
   <div class="search-container">
-    <input type="text" class="form-control search-bar mb-3" placeholder="Search by Product Name or Code" [(ngModel)]="searchTerm">
+    <input type="text" class="form-control search-bar mb-3" placeholder="Search by Product Name or Code" [(ngModel)]="searchTerm"
+    (input)="onSearchTermChange()">
     <div class="header">
       <button class="btn btn-primary mb-3" (click)="openModal()">Add Product</button>
     </div>
@@ -14,15 +15,27 @@
   <table class="table table-bordered table-striped">
     <thead>
       <tr>
-        <th>Product Code</th>
-        <th>Product Name</th>
-        <th>Supplier ID</th>
-        <th>Supplier Item Number</th>
-        <th>Final Price</th>
+        <th (click)="sortTable('ProductCode')">
+          CFE Product Code <span *ngIf="sortColumn === 'ProductCode'">{{ sortAscending ? '▲' : '▼' }}</span>
+        </th>
+        <th (click)="sortTable('ProductName')">
+          Product Name <span *ngIf="sortColumn === 'ProductName'">{{ sortAscending ? '▲' : '▼' }}</span>
+        </th>
+        <th (click)="sortTable('SupplierID')">
+          Supplier ID <span *ngIf="sortColumn === 'SupplierID'">{{ sortAscending ? '▲' : '▼' }}</span>
+        </th>
+        <th (click)="sortTable('SupplierItemNumber')">
+          Supplier Item Number <span *ngIf="sortColumn === 'SupplierItemNumber'">{{ sortAscending ? '▲' : '▼' }}</span>
+        </th>
+        <th (click)="sortTable('FinalPrice')">
+          Final Price <span *ngIf="sortColumn === 'FinalPrice'">{{ sortAscending ? '▲' : '▼' }}</span>
+        </th>
+        
         <th>Picture</th>
         <th>Actions</th>
       </tr>
     </thead>
+    
     <tbody>
       <tr *ngFor="let product of paginatedProducts">
         <td>{{ product.ProductCode }}</td>
@@ -94,4 +107,3 @@
     </div>
   </div>
 </div>
-

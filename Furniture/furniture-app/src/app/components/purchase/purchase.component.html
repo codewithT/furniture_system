@@ -1,153 +1,138 @@
 <div class="purchase-container">
-    <div class="header">
-      <h2>Home / purchases</h2>
-      <div class="search-add">
-        <div class="search-box">
-          <input 
-            type="text" 
-            [(ngModel)]="searchQuery" 
-            placeholder="Search by SO Number..." 
-            (input)="searchPurchases()"
-          />
-        </div>
-        <button class="add-button" (click)="addPurchase()">
-          <i class="fas fa-plus"></i> Add Purchase
-        </button>
+  <div class="header">
+    <h2>Home / purchases</h2>
+    <div class="search-add">
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search purchases..."
+          (input)="searchPurchases()"
+        />
       </div>
+      <button class="add-button" (click)="addPurchase()">
+        <i class="fas fa-plus"></i> Add Purchase
+      </button>
+      <button class="send-button" (click)="sendEmails()">
+        <i class="fas fa-envelope"></i> Save and Send
+      </button>
     </div>
+  </div>
 
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Purchase ID</th>
-            <th>Product ID</th>
-            <th>Supplier ID</th>
-            <th>SO Number</th>
-            <th>Record Margin</th>
-            <th>Created Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let purchase of paginatedPurchases">
-            <td>{{ purchase?.purchaseID }}</td>
-            <td>{{ purchase?.productID }}</td>
-            <td>{{ purchase?.supplierID }}</td>
-            <td>{{ purchase?.soNumber }}</td>
-            <td>{{ purchase?.recordMargin }}%</td>
-            <td>{{ purchase?.createdDate | date:'mediumDate' }}</td>
-            <td class="actions">
-              <button class="edit-btn" (click)="editPurchase(purchase)">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="delete-btn" *ngIf="purchase?.purchaseID !== undefined" 
-              (click)="deletePurchase(purchase.purchaseID)">
-            <i class="fas fa-trash"></i>
-          </button>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" (change)="selectAll($event)" /></th>
+          <th (click)="sortTable('PurchaseID')">PurchaseReq ID</th>
+          <th (click)="sortTable('ProductCode')">Product Code</th>
+          <th (click)="sortTable('SupplierCode')">Supplier Code</th>
+          <th (click)="sortTable('Ordered_Qty')"> Quantity</th>
+          <th (click)="sortTable('SONumber')">SO Number</th>
+          <th (click)="sortTable('Delivery_date')">Expected Delivery Date</th>
+          <th (click)="sortTable('POStatus')">PO Status</th>
+          <th (click) = "sortTable('PONumber')">PO Number</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      
+      <tbody>
+        <tr *ngFor="let purchase of paginatedPurchases">
           
-            </td>
-          </tr>
-          <tr *ngIf="filteredPurchases?.length === 0">
-            <td colspan="7" class="no-data">No purchases found</td>
-          </tr>
-        </tbody>
-      </table>
+          <td><input type="checkbox" [(ngModel)]="purchase.selected" /></td>
+          <td>{{ purchase?.PurchaseID }}</td>
+          <td>{{ purchase?.ProductCode }}</td>
+          <td>{{ purchase?.SupplierCode }}</td>
+          <td>{{ purchase?.Ordered_Qty }}</td>
+          <td>{{ purchase?.SONumber }}</td>
+          <td>{{ purchase?.Delivery_date | date:'mediumDate' }}</td>
+          <td>{{ purchase?.POStatus }}</td>
+          <td>{{ purchase?.PONumber }}</td>
+          <td class="actions">
+            <button class="edit-btn" (click)="editPurchase(purchase)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button 
+              class="delete-btn" 
+              *ngIf="purchase?.PurchaseID !== undefined"
+              (click)="deletePurchase(purchase.PurchaseID)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredPurchases?.length === 0">
+          <td colspan="8" class="no-data">No purchases found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination-controls">
+    <div class="page-size-selector">
+      <span>Show:</span>
+      <select [(ngModel)]="pageSize" (change)="onPageSizeChange($event)">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">
+          {{ size }} entries
+        </option>
+      </select>
     </div>
 
-    <div class="pagination-controls">
-      <div class="page-size-selector">
-        <span>Show:</span>
-        <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
-          <option *ngFor="let size of pageSizeOptions" [value]="size">
-            {{ size }} entries
-          </option>
-        </select>
-      </div>
-
-      <div class="pagination">
-        <button 
-          [disabled]="currentPage <= 1"
-          (click)="decrementPage()"
-          class="page-btn"
-        >
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-        <button 
-          [disabled]="currentPage >= totalPages"
-          (click)="incrementPage()"
-          class="page-btn"
-        >
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
+    <div class="pagination">
+      <button
+        [disabled]="currentPage <= 1"
+        (click)="decrementPage()"
+        class="page-btn"
+      >
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <button
+        [disabled]="currentPage >= totalPages"
+        (click)="incrementPage()"
+        class="page-btn"
+      >
+        <i class="fas fa-chevron-right"></i>
+      </button>
     </div>
-</div>
+  </div>
 
-<!-- Modal -->
-<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
-    <div class="modal-container" (click)="$event.stopPropagation()">
+  <!-- Modal for Add/Edit Purchase -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-container" (click)="preventModalClose($event)">
       <div class="modal-header">
-        <h2>{{ isEditing ? 'Edit Purchase' : 'Add Purchase' }}</h2>
-        <button class="close-button" (click)="closeModal()">&times;</button>
+        <h3>{{ isEditing ? 'Edit Purchase' : 'Add Purchase' }}</h3>
+        <button class="close-btn" (click)="closeModal()">&times;</button>
       </div>
-
       <div class="modal-body" *ngIf="selectedPurchase">
         <div class="form-group">
-          <label for="soNumber">SO Number:</label>
-          <input 
-            id="soNumber"
-            type="text" 
-            [(ngModel)]="selectedPurchase.soNumber" 
-       
-          />
+          <label for="ProductCode">CFE Product Code</label>
+          <input type="text" id="ProductCode" [(ngModel)]="selectedPurchase.ProductCode" />
         </div>
-
         <div class="form-group">
-          <label for="productId">Product ID:</label>
-          <input 
-            id="productId"
-            type="number" 
-            [(ngModel)]="selectedPurchase.productID" 
+          <label for="SupplierCode">Supplier Code</label>
+          <input type="text" id="SupplierCode" [(ngModel)]="selectedPurchase.SupplierCode" />
+        </div>
+        <div class="form-group">
+          <label for="SONumber">SO Number</label>
+          <input type="text" id="SONumber" [(ngModel)]="selectedPurchase.SONumber" />
+        </div>
+        <div class="form-group">
+          <label for="Delivery_date">Expected Delivery Date</label>
+          <input type="date" id="Delivery_date" [(ngModel)]="selectedPurchase.Delivery_date" />
+        </div>
+        <div class="form-group">
+          <label for="POStatus">PO Status</label>
+          <select id="POStatus" [(ngModel)]="selectedPurchase.POStatus">
+            <option value="Ordered">Ordered</option>
+            <option value="Not Ordered">Not Ordered</option>
             
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="supplierId">Supplier ID:</label>
-          <input 
-            id="supplierId"
-            type="number" 
-            [(ngModel)]="selectedPurchase.supplierID" 
-            
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="margin">Record Margin (%):</label>
-          <input 
-            id="margin"
-            type="number" 
-            [(ngModel)]="selectedPurchase.recordMargin" 
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="date">Created Date:</label>
-          <input 
-            id="date"
-            type="date" 
-            [(ngModel)]="selectedPurchase.createdDate" 
-            required
-          />
+          </select>
         </div>
       </div>
-
       <div class="modal-footer">
-        <button class="button secondary" (click)="closeModal()">Cancel</button>
-        <button class="button primary" (click)="savePurchase()">Save</button>
+        <button class="cancel-btn" (click)="closeModal()">Cancel</button>
+        <button class="save-btn" (click)="savePurchase()">Save</button>
       </div>
     </div>
+  </div>
 </div>

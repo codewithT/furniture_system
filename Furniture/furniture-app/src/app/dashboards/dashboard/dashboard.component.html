@@ -3,13 +3,13 @@
   </mat-toolbar>
   
   <div class="dashboard-container">
-    <div class="stats-container">
-      <app-stats-card *ngFor="let stat of stats" [data]="stat"></app-stats-card>
-    </div>
+    
   
     <div class="widgets-container">
       <app-chart-widget></app-chart-widget>
       <app-table-widget></app-table-widget>
+      <app-sales-month></app-sales-month>
+   
     </div>
   </div>
   

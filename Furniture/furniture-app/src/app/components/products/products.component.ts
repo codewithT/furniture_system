@@ -15,13 +15,7 @@ export interface Product {
   FinalPrice: number;
   Picture: string;
 }
-export interface ProductModal{
-  ProductID : number;
-  ProductName: string;
-  SupplierID: number;
-  FinalPrice: number;
-  Picture: string;
-}
+ 
 @Component({
   selector: 'app-products',
   templateUrl: './products.component.html',
@@ -37,9 +31,9 @@ export class ProductsComponent implements OnInit {
  
   searchTerm: string = '';
   selectedFile: File | null = null;
- 
+  
   // Pagination properties
-  entriesPerPage: number = 20;
+  entriesPerPage: number = 5;
   currentPage: number = 1;
   newProduct : Product = {
     ProductID: 0,
@@ -84,6 +78,15 @@ export class ProductsComponent implements OnInit {
   }
   
   closeProduct(){
+    this.newProduct= {
+      ProductID: 0,
+        ProductCode: '',
+        ProductName: '',
+        SupplierID: 0,
+        SupplierItemNumber: '',
+        FinalPrice: 0,
+        Picture: ''
+    };
     this.isEdit = false;
   }
   // Handle Image Upload
@@ -130,9 +133,40 @@ export class ProductsComponent implements OnInit {
     this.updatePagination();
   }
   
+  // sort products
+  sortColumn: string | null = null;
+  sortAscending: boolean = true; 
+  sortTable(column: string) {
+    if (this.sortColumn === column) {
+      this.sortAscending = !this.sortAscending;
+    } else {
+      this.sortColumn = column;
+      this.sortAscending = true;
+    }
+  
+    this.products.sort((a: any, b: any) => {
+      let valueA = a[column];
+      let valueB = b[column];
+  
+      if (typeof valueA === 'string') {
+        valueA = valueA.toLowerCase();
+        valueB = valueB.toLowerCase();
+      }
+  
+      if (valueA > valueB) return this.sortAscending ? 1 : -1;
+      if (valueA < valueB) return this.sortAscending ? -1 : 1;
+      return 0;
+    });
+  }
+  
 
   // Edit Product
   editProduct(product : Product) {
+    if(product.Picture=== null){
+      product.Picture = '';
+    }
+    console.log(product);
+    
     this.newProduct = { ...product };
     this.isEdit = true;
     this.openModal();
@@ -153,6 +187,11 @@ export class ProductsComponent implements OnInit {
       product.ProductCode.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
   }
+  onSearchTermChange() {
+    this.updatePagination();
+  }
+    
+  
 
   // Pagination Methods
   get totalPages() {
@@ -173,10 +212,13 @@ export class ProductsComponent implements OnInit {
   }
 
   updatePagination() {
-    if (this.currentPage > this.totalPages) {
-      this.currentPage = this.totalPages;
+    const total = Math.ceil(this.products.length / this.entriesPerPage);
+    if (this.currentPage > total) {
+      this.currentPage = Math.max(1, total);
     }
   }
+  
+  
 
   prevPage() {
     if (this.currentPage > 1) {

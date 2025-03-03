@@ -3,31 +3,47 @@
 
     <!-- Search Bar -->
     <div class="search-container">
-        <input type="text" class="form-control search-bar mb-3" placeholder="Search by Supplier ID,Name,Address" [(ngModel)]="searchTerm">
+        <input type="text" class="form-control search-bar mb-3" placeholder="Search by Supplier ID, Name, Address" 
+        [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
+        >
         <div class="header">
-            <button class="btn btn-primary mb-3" (click)="openModal()">Add Supplier</button>        </div>
+            <button class="btn btn-primary mb-3" (click)="openModal()">Add Supplier</button>
+        </div>
     </div>
 
     <!-- Supplier Table -->
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
-                <th>Supplier Id</th>
-                <th>Supplier Code</th>
-                <th>Supplier Name</th>
-                <th>Supplier Address</th>
+                <th (click)="sortBy('SupplierID')">Serial No
+                    <span *ngIf="sortColumn === 'SupplierID'">{{ sortDirection ? '▲' : '▼' }}</span>
+                </th>
+                <th (click)="sortBy('SupplierCode')">Supplier Code 
+                    <span *ngIf="sortColumn === 'SupplierCode'">{{ sortDirection ? '▲' : '▼' }}</span>
+                </th>
+                <th (click)="sortBy('SupplierName')">Supplier Name 
+                    <span *ngIf="sortColumn === 'SupplierName'">{{ sortDirection ? '▲' : '▼' }}</span>
+                </th>
+                <th (click)="sortBy('SupplierAddress')">Supplier Address 
+                    <span *ngIf="sortColumn === 'SupplierAddress'">{{ sortDirection ? '▲' : '▼' }}</span>
+                </th>
+                <th>Email Address
+                    <span *ngIf="sortColumn === 'EmailAddress'">{{ sortDirection ? '▲' : '▼' }}</span>
+                </th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let supplier of paginatedProducts">
-                <td>{{ supplier.supplierID }}</td>
-                <td>{{ supplier.supplierCode }}</td>
-                <td>{{ supplier.supplierName }}</td>
-                <td>{{ supplier.supplierAddress }}</td>
+            <tr *ngFor="let supplier of paginatedSuppliers ,let i = index">
+                <!-- <td>{{ supplier | json }}</td> -->
+                <td>{{ supplier?.SupplierID  }}</td>
+                <td *ngIf="supplier">{{ supplier.SupplierCode }}</td>
+  <td *ngIf="supplier">{{ supplier.SupplierName }}</td>
+  <td *ngIf="supplier">{{ supplier.SupplierAddress }}</td>     
+  <td *ngIf="supplier">{{ supplier.EmailAddress }}</td>     
                 <td>
-                    <button class="btn btn-sm btn-warning" (click)="editSupplier(supplier)">Edit</button>
-                    <button class="btn btn-sm btn-danger" (click)="deleteSupplier(supplier.supplierID)">Delete</button>
+                    <button class="btn btn-sm btn-warning me-2" (click)="editSupplier(supplier)">Edit</button>
+                    <button class="btn btn-sm btn-danger" (click)="deleteSupplier(supplier.SupplierID)">Delete</button>
                 </td>
             </tr>
         </tbody>
@@ -49,32 +65,36 @@
     </nav>
 </div>
 
-<!-- Add or Edit Supplier Modal -->
-<div id="addSupplierModal" class="modal fade" tabindex="-1" aria-hidden="true">
+<!-- Supplier Modal -->
+<div class="modal fade" #supplierModal tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ newSupplier.supplierID > 0 ? 'Edit Supplier' : 'Add Supplier' }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">{{ isEdit ? 'Edit Supplier' : 'Add Supplier' }}</h5>
+                <button type="button" class="btn-close" (click)="closeModal()"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form #supplierForm="ngForm" (ngSubmit)="saveSupplier()">
                     <div class="mb-3">
                         <label class="form-label">Supplier Code</label>
-                        <input type="text" class="form-control" [(ngModel)]="newSupplier.supplierCode" name="supplierCode" required>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.SupplierCode" name="supplierCode" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Supplier Name</label>
-                        <input type="text" class="form-control" [(ngModel)]="newSupplier.supplierName" name="supplierName" required>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.SupplierName" name="supplierName" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Supplier Address</label>
-                        <input type="text" class="form-control" [(ngModel)]="newSupplier.supplierAddress" name="supplierAddress" required>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.SupplierAddress" name="supplierAddress" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier Email Address</label>
+                        <input type="text" class="form-control" [(ngModel)]="newSupplier.EmailAddress" name="emailaddress" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="closeSupplier()">Close</button>
+                <button type="button" class="btn btn-secondary" (click)="closeModal()">Close</button>
                 <button type="button" class="btn btn-primary" (click)="saveSupplier()">Save</button>
             </div>
         </div>

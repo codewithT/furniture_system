@@ -6,8 +6,21 @@
     <mat-label>Search Orders</mat-label>
     <input matInput [(ngModel)]="searchTerm" (keyup)="applySearchFilter()" placeholder="Search by ProductId, Date">
   </mat-form-field>
-
+  <button mat-raised-button color="accent" (click)="sendEmailsToCustomers()">
+    <mat-icon>email</mat-icon> Send Email
+  </button>
   <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8">
+    
+    <!-- Checkbox Column -->
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef>
+        <mat-checkbox (change)="toggleAllSelection($event)"></mat-checkbox>
+      </th>
+      <td mat-cell *matCellDef="let order">
+        <mat-checkbox [(ngModel)]="order.selected"></mat-checkbox>
+      </td>
+    </ng-container>
+
     <!-- Order ID Column -->
     <ng-container matColumnDef="SalesID">
       <th mat-header-cell *matHeaderCellDef mat-sort-header> Sales ID </th>
@@ -21,27 +34,43 @@
     </ng-container>
 
     <!-- Client Name Column -->
-    <ng-container matColumnDef="ProductId">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header> ProductId </th>
-      <td mat-cell *matCellDef="let order"> {{ order.ProductId }} </td>
+    <ng-container matColumnDef="ProductID">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header> ProductID</th>
+      <td mat-cell *matCellDef="let order"> {{ order.ProductID }} </td>
     </ng-container>
+
     <ng-container matColumnDef="ProductName">
       <th mat-header-cell *matHeaderCellDef mat-sort-header> Product Name </th>
       <td mat-cell *matCellDef="let order"> {{ order.ProductName }} </td>
     </ng-container>
  
-    <ng-container matColumnDef="customerEmail">
+    <ng-container matColumnDef="CustomerEmail">
       <th mat-header-cell *matHeaderCellDef mat-sort-header> Customer Email </th>
-      <td mat-cell *matCellDef="let order"> {{ order.customerEmail }} </td>
+      <td mat-cell *matCellDef="let order"> {{ order.CustomerEmail }} </td>
     </ng-container>
  
-    <ng-container matColumnDef="totalOrderItem">
+    <ng-container matColumnDef="Qty">
       <th mat-header-cell *matHeaderCellDef mat-sort-header> Total Items </th>
-      <td mat-cell *matCellDef="let order"> {{ order.totalOrderItem }} </td>
+      <td mat-cell *matCellDef="let order"> {{ order.Qty }} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="Delivery_date">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header> Delivery Date </th>
+      <td mat-cell *matCellDef="let order"> {{ order.Delivery_date }} </td>
     </ng-container>
 
     <!-- Payment Status Column -->
-     
+    <ng-container matColumnDef="Payment_Status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header> Payment Status </th>
+      <td mat-cell *matCellDef="let order">
+        <span class="status" [ngClass]="{
+          'full': order.Payment_Status === 'success',
+          'pending': order.Payment_Status === 'pending'
+        }">
+          {{ order.Payment_Status }}
+        </span>
+      </td>
+    </ng-container>
 
     <!-- Action Column -->
     <ng-container matColumnDef="action">
@@ -51,7 +80,6 @@
           Action <mat-icon>arrow_drop_down</mat-icon>
         </button>
         <mat-menu #menu="matMenu">
-          
           <button mat-menu-item (click)="removeOrder(order)">
             <mat-icon>delete</mat-icon>
             <span>Remove</span>

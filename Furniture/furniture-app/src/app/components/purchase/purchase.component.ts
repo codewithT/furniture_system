@@ -1,31 +1,19 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-interface Purchase {
-  purchaseID: number;
-  productID: number;
-  supplierID: number;
-  soNumber: string;
-  recordMargin: number;
-  createdDate: string;
-}
+import { PurchaseService } from '../../services/purchase.service';
+import { Purchase
+ } from '../../models/purchases.model';
 
 @Component({
   selector: 'app-purchase',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DatePipe, NgIf, NgFor],
   templateUrl: './purchase.component.html',
   styleUrls: ['./purchase.component.css']
 })
 export class PurchaseComponent implements OnInit {
-  purchases: Purchase[] = [
-    { purchaseID: 1, productID: 101, supplierID: 501, soNumber: 'SO1234', recordMargin: 15, createdDate: '2024-02-21' },
-    { purchaseID: 2, productID: 102, supplierID: 502, soNumber: 'SO1235', recordMargin: 12, createdDate: '2024-02-20' },
-    { purchaseID: 3, productID: 103, supplierID: 503, soNumber: 'SO1236', recordMargin: 18, createdDate: '2024-02-19' },
-    { purchaseID: 4, productID: 104, supplierID: 504, soNumber: 'SO1237', recordMargin: 10, createdDate: '2024-02-18' },
-  ];
-
+  purchases: Purchase[] = [];
   filteredPurchases: Purchase[] = [];
   currentPage: number = 1;
   pageSize: number = 10;
@@ -36,36 +24,66 @@ export class PurchaseComponent implements OnInit {
   selectedPurchase: Purchase | null = null;
   totalPages: number = 0;
 
+  // Sorting properties
+  sortColumn: keyof Purchase | '' = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+  constructor(private purchaseService : PurchaseService){}
   ngOnInit() {
+    this.loadPurchases();
+  }
+  loadPurchases() {
+    this.purchaseService.getPurchases().subscribe((purchases: Purchase[]) => {
+      this.purchases = purchases.map(purchase => ({ ...purchase, selected: false }));
+      this.refreshList();
+    });
+  }
+  
+  
+  refreshList() {
     this.filteredPurchases = [...this.purchases];
+    this.applySorting();
     this.updateTotalPages();
   }
 
   updateTotalPages() {
     this.totalPages = Math.ceil(this.filteredPurchases.length / this.pageSize);
-    // Reset to page 1 if current page is now invalid
-    if (this.currentPage > this.totalPages) {
-      this.currentPage = 1;
-    }
+    this.currentPage = Math.min(this.currentPage, this.totalPages) || 1;
   }
-
+  getSelectedPurchases() {
+    return this.purchases.filter((purchase: Purchase) => purchase.selected);
+  }
+  
+  sendEmails() {
+    const selectedPurchases = this.getSelectedPurchases();
+    if (selectedPurchases.length === 0) {
+      alert('Please select at least one purchase to send emails.');
+      return;
+    }
+     console.log("Selected"  ,selectedPurchases);
+    this.purchaseService.sendMail(selectedPurchases).subscribe(
+      () => alert('Emails sent successfully!'),
+      (error) => {
+        console.error('Error sending email:', error);
+        alert('Failed to send emails.');
+      }
+    );
+  }
+  
   onPageSizeChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.pageSize = Number(select.value);
-    this.currentPage = 1;
-    this.updateTotalPages();
+    const target = event.target as HTMLSelectElement;
+    if (target) {
+      this.pageSize = Number(target.value);
+      this.currentPage = 1;
+      this.updateTotalPages();
+    }
   }
 
   decrementPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
+    if (this.currentPage > 1) this.currentPage--;
   }
 
   incrementPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-    }
+    if (this.currentPage < this.totalPages) this.currentPage++;
   }
 
   get paginatedPurchases(): Purchase[] {
@@ -73,15 +91,48 @@ export class PurchaseComponent implements OnInit {
     return this.filteredPurchases.slice(start, start + this.pageSize);
   }
 
-  searchPurchases() {
-    if (!this.searchQuery.trim()) {
-      this.filteredPurchases = [...this.purchases];
+  sortTable(column: keyof Purchase) {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
-      this.filteredPurchases = this.purchases.filter(purchase =>
-        purchase.soNumber.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        purchase.purchaseID.toString().includes(this.searchQuery)
-      );
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
     }
+  
+    this.applySorting();
+  }
+  
+  applySorting() {
+    if (!this.sortColumn) return;
+  
+    const key = this.sortColumn as keyof Purchase;
+    this.filteredPurchases.sort((a, b) => {
+      let valueA = a[key] as string | number;
+      let valueB = b[key] as string | number;
+  
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        valueA = valueA.toLowerCase();
+        valueB = valueB.toLowerCase();
+      }
+  
+      return valueA < valueB ? (this.sortDirection === 'asc' ? -1 : 1) :
+             valueA > valueB ? (this.sortDirection === 'asc' ? 1 : -1) : 0;
+    });
+  }
+
+  searchPurchases() {
+    const query = this.searchQuery.toLowerCase().trim();
+    
+    this.filteredPurchases = query
+      ? this.purchases.filter(p =>
+          p.SONumber.toLowerCase().includes(query) ||
+          p.PurchaseID.toString().includes(query) ||
+          p.Delivery_date.toLowerCase().includes(query) ||
+          p.ProductCode.toString().includes(query) ||
+          p.SupplierCode.toString().includes(query)
+        )
+      : [...this.purchases];
+
     this.currentPage = 1;
     this.updateTotalPages();
   }
@@ -89,14 +140,19 @@ export class PurchaseComponent implements OnInit {
   addPurchase() {
     this.isEditing = false;
     this.selectedPurchase = {
-      purchaseID: 0,
-      productID: 0,
-      supplierID: 0,
-      soNumber: '',
-      recordMargin: 0,
-      createdDate: new Date().toISOString().split('T')[0]
+      PurchaseID: 0,
+      ProductCode: 0,
+      SupplierCode: 0,
+      SONumber: '',
+      POStatus: '',
+      Delivery_date: new Date().toISOString().split('T')[0],
+      PONumber: '',
+      Ordered_Qty : 0,
+      // selected: false
     };
     this.showModal = true;
+    console.log('Modal state:', this.showModal); // Add this line
+
   }
 
   editPurchase(purchase: Purchase) {
@@ -109,24 +165,23 @@ export class PurchaseComponent implements OnInit {
     if (!this.selectedPurchase) return;
 
     if (this.isEditing) {
-      const index = this.purchases.findIndex(p => p.purchaseID === this.selectedPurchase?.purchaseID);
+      const index = this.purchases.findIndex(p => p.PurchaseID === this.selectedPurchase!.PurchaseID);
       if (index !== -1) {
         this.purchases[index] = { ...this.selectedPurchase };
       }
     } else {
-      const maxId = Math.max(...this.purchases.map(p => p.purchaseID), 0);
-      this.selectedPurchase.purchaseID = maxId + 1;
+      this.selectedPurchase.PurchaseID = Math.max(0, ...this.purchases.map(p => p.PurchaseID)) + 1;
       this.purchases.push({ ...this.selectedPurchase });
     }
-    
-    this.searchPurchases();
+
+    this.refreshList();
     this.closeModal();
   }
 
   deletePurchase(id: number) {
     if (confirm('Are you sure you want to delete this purchase?')) {
-      this.purchases = this.purchases.filter(p => p.purchaseID !== id);
-      this.searchPurchases();
+      this.purchases = this.purchases.filter(p => p.PurchaseID !== id);
+      this.refreshList();
     }
   }
 
@@ -138,4 +193,15 @@ export class PurchaseComponent implements OnInit {
   preventModalClose(event: Event) {
     event.stopPropagation();
   }
+
+  // Adding the missing methods
+  selectAll(event: Event) {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    this.filteredPurchases.forEach(purchase => {
+      purchase.selected = isChecked;
+    });
+  }
+  
+
+ 
 }
