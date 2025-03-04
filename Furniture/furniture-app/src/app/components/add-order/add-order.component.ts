@@ -163,7 +163,7 @@ export class AddOrderComponent implements OnInit {
       // Update the Check property
       this.storeProductSupplierIdCodes[itemIndex].Check = isChecked;
     }
-  
+    
     console.log("Updated storeProductSupplierIdCodes:", this.storeProductSupplierIdCodes);
     console.log("Updated nonCheckedProductSupplierIdCodes:", this.nonCheckedProductSupplierIdCodes);
   }

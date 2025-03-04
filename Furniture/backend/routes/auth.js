@@ -2,30 +2,39 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const db = require('../config/db');
-const { promisify } = require('util'); 
 require('dotenv').config();
 
 const router = express.Router();
 
-// Convert `db.query()` to return Promises
-const queryAsync = promisify(db.query).bind(db);
-
 // **Register User**
 router.post('/register', async (req, res) => {
   const { email, password } = req.body;
+  let connection;
 
   try {
-    const results = await queryAsync('SELECT * FROM furniture_db.users WHERE email = ?', [email]);
+    connection = await db.promise().getConnection();  // Get a connection from the pool
 
-    if (results.length > 0) return res.status(400).json({ msg: 'User already exists' });
+    const [results] = await connection.query(
+      'SELECT * FROM furniture_db.users WHERE email = ?', [email]
+    );
+
+    if (results.length > 0) {
+      connection.release();
+      return res.status(400).json({ msg: 'User already exists' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await queryAsync('INSERT INTO furniture_db.users (email, password) VALUES (?, ?)', [email, hashedPassword]);
+    await connection.query(
+      'INSERT INTO furniture_db.users (email, password) VALUES (?, ?)', 
+      [email, hashedPassword]
+    );
 
+    connection.release(); // Always release the connection back to the pool
     res.status(201).json({ msg: 'User registered successfully' });
 
   } catch (err) {
+    if (connection) connection.release();
     console.error('Database error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
@@ -34,30 +43,30 @@ router.post('/register', async (req, res) => {
 // **Login User (Creates a Session)**
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  let connection;
 
   try {
-    const results = await queryAsync('SELECT * FROM furniture_db.users WHERE email = ?', [email]);
+    connection = await db.promise().getConnection();
+    const [results] = await connection.query(
+      'SELECT * FROM furniture_db.users WHERE email = ?', [email]
+    );
+    connection.release();
 
     if (results.length === 0) return res.status(400).json({ msg: 'Invalid credentials' });
 
     const user = results[0];
-
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    // Store user session with all necessary user data
     req.session.user = { id: user.id, email: user.email };
-    
-    // Make sure the session is saved before responding
+
     req.session.save((err) => {
       if (err) {
         console.error('Session save error:', err);
         return res.status(500).json({ msg: 'Session error' });
       }
-      res.json({ 
-        msg: 'Logged in successfully', 
-        user: { id: user.id, email: user.email } 
-      });
+      res.json({ msg: 'Logged in successfully', user: { id: user.id, email: user.email } });
     });
 
   } catch (err) {
@@ -80,12 +89,6 @@ router.post('/logout', (req, res) => {
 
 // **Check Authentication Status**
 router.get('/is-authenticated', (req, res) => {
-  // Debug logging
-  console.log('Session in is-authenticated:', req.session);
-  console.log('User in session:', req.session?.user);
-  console.log('Checking authentication status...');
-  console.log('Session exists:', !!req.session);
-  console.log('User in session:', req.session?.user);
   if (req.session && req.session.user) {
     res.json({ isAuthenticated: true, user: req.session.user });
   } else {
@@ -95,8 +98,6 @@ router.get('/is-authenticated', (req, res) => {
 
 // **Protected Route**
 router.get('/protected', (req, res) => {
-  console.log('Session in protected route:', req.session);
-  
   if (!req.session || !req.session.user) {
     return res.status(401).json({ msg: 'Unauthorized' });
   }
